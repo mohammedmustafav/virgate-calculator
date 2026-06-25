@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Cost Calculator — Virgate × AI</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:#0A2D6E; --blue:#1A56DB; --sky:#E6F1FB; --pale:#F5F8FF;
+    --border:#C7D9F8; --text:#0A1A3D; --muted:#4A6080; --white:#ffffff;
+    --green-bg:#F0FAF4; --green-bd:#68D391; --green-tx:#1A4731;
+    --amber-bg:#FFF8E6; --amber-bd:#F0C050; --amber-tx:#7A4F00;
+    --red-bg:#FFF5F5; --red-bd:#FC8181; --red-tx:#7B1E1E;
+    --purple-bg:#EEEDFE; --purple-tx:#3C3489;
+    --radius:10px; --radius-sm:6px;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; background:var(--pale); color:var(--text); min-height:100vh; padding:0 0 3rem; }
+
+  .header { background:var(--navy); padding:1.25rem 2rem; display:flex; align-items:center; justify-content:space-between; }
+  .header-brand { display:flex; align-items:center; gap:14px; }
+  .logo-mark { width:38px; height:38px; background:var(--blue); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#fff; }
+  .brand-name { font-size:18px; font-weight:600; color:#fff; }
+  .brand-sub  { font-size:12px; color:#85B7EB; margin-top:1px; }
+  .header-badge { font-size:11px; padding:4px 12px; border:1px solid #85B7EB; border-radius:999px; color:#C7D9F8; letter-spacing:.04em; }
+
+  .hero { background:linear-gradient(135deg,#0F3150 0%,#1A56DB 100%); padding:2rem 2rem 1.75rem; color:#fff; }
+  .hero h1 { font-size:22px; font-weight:600; margin-bottom:6px; }
+  .hero p  { font-size:14px; color:#C7D9F8; line-height:1.6; max-width:640px; }
+  .approx-banner { background:#FFF8E6; border:1.5px solid #F0C050; border-radius:10px; display:flex; align-items:flex-start; gap:10px; max-width:900px; margin:1.25rem auto 0; padding:.85rem 1.5rem; }
+  .approx-banner svg { flex-shrink:0; margin-top:1px; }
+  .approx-banner p { font-size:13px; color:#7A4F00; line-height:1.6; }
+  .approx-banner p b { font-weight:600; }
+  .approx-tag { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:#7A4F00; background:#FFF8E6; border:1px solid #F0C050; border-radius:4px; padding:1px 6px; margin-left:6px; vertical-align:middle; }
+
+  .main { max-width:900px; margin:2rem auto 0; padding:0 1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+  @media(max-width:660px){ .main { grid-template-columns:1fr; } }
+
+  .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; }
+  .card-full { grid-column:1/-1; }
+  .card-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:1rem; display:flex; align-items:center; gap:7px; }
+
+  .rate-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .rate-card { border:1px solid var(--border); border-radius:var(--radius-sm); padding:.75rem 1rem; cursor:pointer; transition:border-color .15s,background .15s; background:var(--pale); }
+  .rate-card:hover { border-color:var(--blue); }
+  .rate-card.active { border-color:var(--blue); background:var(--sky); }
+  .rate-model { font-size:13px; font-weight:600; color:var(--navy); margin-bottom:4px; }
+  .rate-price { font-size:11px; color:var(--muted); }
+  .rate-use   { font-size:11px; color:var(--blue); margin-top:4px; font-weight:500; }
+
+  .section-sep { grid-column:1/-1; display:flex; align-items:center; gap:10px; margin:-.25rem 0; }
+  .section-sep span { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); white-space:nowrap; }
+  .section-sep hr { flex:1; border:none; border-top:1px solid var(--border); }
+
+  .slider-block { margin-bottom:1rem; }
+  .slider-block:last-child { margin-bottom:0; }
+  .slider-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  .slider-label { font-size:13px; color:var(--text); }
+  .slider-val { font-size:15px; font-weight:600; color:var(--navy); min-width:28px; text-align:right; }
+
+  input[type=range] { width:100%; height:4px; -webkit-appearance:none; appearance:none; background:var(--border); border-radius:2px; outline:none; cursor:pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:var(--blue); border:2px solid #fff; box-shadow:0 1px 4px rgba(26,86,219,.35); cursor:pointer; }
+  input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:var(--blue); border:2px solid #fff; cursor:pointer; }
+
+  .metrics-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .metric { background:var(--pale); border:1px solid var(--border); border-radius:var(--radius-sm); padding:.9rem 1rem; }
+  .metric.accent { background:var(--sky); border-color:#85B7EB; }
+  .mlabel { font-size:11px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
+  .mval   { font-size:24px; font-weight:600; color:var(--navy); letter-spacing:-.5px; }
+  .msub   { font-size:11px; color:var(--muted); margin-top:2px; }
+
+  /* Phase breakdown */
+  .phases { display:grid; gap:8px; margin-top:1rem; }
+  .phase { border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+  .phase-header { display:grid; grid-template-columns:1fr auto; align-items:center; gap:8px; padding:9px 14px; background:var(--pale); border-bottom:1px solid var(--border); }
+  .phase-name { font-size:13px; font-weight:600; color:var(--navy); display:flex; align-items:center; gap:8px; }
+  .phase-cost { font-size:13px; font-weight:600; color:var(--navy); }
+  .phase-bar-wrap { height:4px; background:var(--border); margin:0 14px 0; border-radius:2px; overflow:hidden; }
+  .phase-bar { height:100%; border-radius:2px; transition:width .35s; }
+  .phase-rows { padding:6px 14px 10px; display:grid; gap:3px; }
+  .prow { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); padding:3px 0; border-bottom:1px dotted var(--border); }
+  .prow:last-child { border-bottom:none; }
+  .prow .pv { color:var(--text); font-weight:500; }
+
+  .pill { display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; }
+  .pill-blue   { background:var(--sky);        color:var(--blue);    border:1px solid #85B7EB; }
+  .pill-amber  { background:var(--amber-bg);   color:var(--amber-tx); border:1px solid var(--amber-bd); }
+  .pill-purple { background:var(--purple-bg);  color:var(--purple-tx); border:1px solid #AFA9EC; }
+  .pill-green  { background:var(--green-bg);   color:var(--green-tx); border:1px solid var(--green-bd); }
+
+  .impact-box { border-radius:var(--radius-sm); padding:1rem 1.25rem; font-size:13px; line-height:1.7; border:1px solid; margin-top:.5rem; }
+  .impact-box b { font-weight:600; }
+  .impact-low  { background:var(--green-bg); border-color:var(--green-bd); color:var(--green-tx); }
+  .impact-mid  { background:var(--amber-bg); border-color:var(--amber-bd); color:var(--amber-tx); }
+  .impact-high { background:var(--red-bg);   border-color:var(--red-bd);   color:var(--red-tx);  }
+
+  .tip-box { background:var(--sky); border:1px solid var(--border); border-radius:var(--radius-sm); padding:.85rem 1.1rem; font-size:12px; color:#0C447C; line-height:1.65; margin-top:1rem; }
+  .tip-box b { font-weight:600; }
+
+  .footer { max-width:900px; margin:1.5rem auto 0; padding:0 1.5rem; font-size:12px; color:var(--muted); line-height:1.7; }
+  .footer a { color:var(--blue); text-decoration:none; }
+  .footer hr { border:none; border-top:1px solid var(--border); margin:.75rem 0; }
+  .footer-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <div class="logo-mark">V</div>
+    <div>
+      <div class="brand-name">Virgate</div>
+      <div class="brand-sub">AI Automation · MCP Projects</div>
+    </div>
+  </div>
+  <div class="header-badge">API Cost Calculator</div>
+</header>
+
+<div class="hero">
+  <h1>Estimate your monthly API cost</h1>
+  <p>Based on the actual financial commentary prompt — covering all four tool-call phases: schema read, DAX queries, vendor drill-downs, and commentary generation. Adjust the sliders to match your volumes.</p>
+</div>
+
+<div class="approx-banner">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0C050" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <p><b>These are approximate estimates only.</b> Actual API token usage will vary depending on your Power BI schema complexity, the volume of data returned by DAX queries, commentary length, and how many vendor drill-downs are triggered. We recommend running the pilot with a single client first to get real measured figures — then use those to calibrate this calculator for your portfolio.</p>
+</div>
+
+<div class="main">
+
+  <!-- Model selector -->
+  <div class="card card-full">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Claude model
+    </div>
+    <div class="rate-grid">
+      <div class="rate-card active" id="rc-sonnet" onclick="setModel('sonnet')">
+        <div class="rate-model">Sonnet 4.6</div>
+        <div class="rate-price">Input $3 / M · Output $15 / M</div>
+        <div class="rate-use">Recommended · best quality/cost</div>
+      </div>
+      <div class="rate-card" id="rc-haiku" onclick="setModel('haiku')">
+        <div class="rate-model">Haiku 4.5</div>
+        <div class="rate-price">Input $0.80 / M · Output $4 / M</div>
+        <div class="rate-use">Budget option · lighter tasks</div>
+      </div>
+      <div class="rate-card" id="rc-opus" onclick="setModel('opus')">
+        <div class="rate-model">Opus 4.6</div>
+        <div class="rate-price">Input $15 / M · Output $75 / M</div>
+        <div class="rate-use">Most capable · complex reasoning</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Left — inputs -->
+  <div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Your volumes
+      </div>
+
+      <div class="slider-block">
+        <div class="slider-header"><span class="slider-label">Clients per month</span><span class="slider-val" id="v-cl">20</span></div>
+        <input type="range" min="1" max="150" value="20" step="1" id="s-cl" oninput="go()">
+      </div>
+      <div class="slider-block">
+        <div class="slider-header"><span class="slider-label">Entities per client (funds)</span><span class="slider-val" id="v-en">3</span></div>
+        <input type="range" min="1" max="10" value="3" step="1" id="s-en" oninput="go()">
+      </div>
+      <div class="slider-block">
+        <div class="slider-header"><span class="slider-label">GL lines per entity</span><span class="slider-val" id="v-gl">7</span></div>
+        <input type="range" min="3" max="15" value="7" step="1" id="s-gl" oninput="go()">
+      </div>
+      <div class="slider-block">
+        <div class="slider-header"><span class="slider-label">Vendor drill-downs per client</span><span class="slider-val" id="v-vd">4</span></div>
+        <input type="range" min="0" max="20" value="4" step="1" id="s-vd" oninput="go()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Right — summary metrics -->
+  <div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Cost summary
+      </div>
+      <div class="metrics-grid">
+        <div class="metric accent">
+          <div class="mlabel">Monthly total <span class="approx-tag">Approx</span></div>
+          <div class="mval" id="m-total">—</div>
+          <div class="msub" id="m-model-sub">Sonnet 4.6</div>
+        </div>
+        <div class="metric accent">
+          <div class="mlabel">Annual estimate <span class="approx-tag">Approx</span></div>
+          <div class="mval" id="m-annual">—</div>
+          <div class="msub">× 12 months</div>
+        </div>
+        <div class="metric">
+          <div class="mlabel">Per client run <span class="approx-tag">Approx</span></div>
+          <div class="mval" id="m-percl">—</div>
+          <div class="msub">all 4 phases</div>
+        </div>
+        <div class="metric">
+          <div class="mlabel">Tokens per client</div>
+          <div class="mval" id="m-toks">—</div>
+          <div class="msub">input + output</div>
+        </div>
+      </div>
+
+      <div class="tip-box" id="tip-box">Calculating…</div>
+    </div>
+  </div>
+
+  <!-- Phase breakdown full width -->
+  <div class="card card-full">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Token breakdown — per client run (4 phases)
+    </div>
+
+    <div class="phases">
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-name"><span class="pill pill-blue">Phase 1</span> Schema read — GetSemanticModelSchema</div>
+          <div class="phase-cost" id="pc1">—</div>
+        </div>
+        <div class="phase-bar-wrap"><div class="phase-bar" id="pb1" style="background:#378ADD;width:0%"></div></div>
+        <div class="phase-rows">
+          <div class="prow"><span>System prompt (workflow instructions + tone rules)</span><span class="pv" id="r-p1sys">—</span></div>
+          <div class="prow"><span>Schema response from Power BI (tables, measures, relationships)</span><span class="pv" id="r-p1schema">—</span></div>
+          <div class="prow"><span>Phase 1 total</span><span class="pv" id="r-p1tot">—</span></div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-name"><span class="pill pill-amber">Phase 2</span> DAX queries — ExecuteQuery × entities</div>
+          <div class="phase-cost" id="pc2">—</div>
+        </div>
+        <div class="phase-bar-wrap"><div class="phase-bar" id="pb2" style="background:#EF9F27;width:0%"></div></div>
+        <div class="phase-rows">
+          <div class="prow"><span>Phase 1 context carried forward (input)</span><span class="pv" id="r-p2hist">—</span></div>
+          <div class="prow"><span>Claude-written DAX queries (output)</span><span class="pv" id="r-p2dax">—</span></div>
+          <div class="prow"><span>Actuals vs budget results returned (input)</span><span class="pv" id="r-p2res">—</span></div>
+          <div class="prow"><span>Phase 2 total</span><span class="pv" id="r-p2tot">—</span></div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-name"><span class="pill pill-purple">Phase 3</span> Vendor drill-downs — ExecuteQuery per variance</div>
+          <div class="phase-cost" id="pc3">—</div>
+        </div>
+        <div class="phase-bar-wrap"><div class="phase-bar" id="pb3" style="background:#7F77DD;width:0%"></div></div>
+        <div class="phase-rows">
+          <div class="prow"><span>Transaction-level DAX per drill-down (output)</span><span class="pv" id="r-p3dax">—</span></div>
+          <div class="prow"><span>Vendor / transaction results returned (input)</span><span class="pv" id="r-p3res">—</span></div>
+          <div class="prow"><span>Incremental context per drill-down turn (input)</span><span class="pv" id="r-p3ctx">—</span></div>
+          <div class="prow"><span>Phase 3 total</span><span class="pv" id="r-p3tot">—</span></div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-name"><span class="pill pill-green">Phase 4</span> Commentary generation — final output</div>
+          <div class="phase-cost" id="pc4">—</div>
+        </div>
+        <div class="phase-bar-wrap"><div class="phase-bar" id="pb4" style="background:#1D9E75;width:0%"></div></div>
+        <div class="phase-rows">
+          <div class="prow"><span>Full context carried into final call (input)</span><span class="pv" id="r-p4ctx">—</span></div>
+          <div class="prow"><span>Commentary text generated (output)</span><span class="pv" id="r-p4out">—</span></div>
+          <div class="prow"><span>Phase 4 total</span><span class="pv" id="r-p4tot">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="impact-box impact-low" id="impact-box" style="margin-top:1rem">Calculating…</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <hr>
+  <div class="footer-inner">
+    <span>Prepared by <strong>Mustafa · Virgate</strong> · <a href="mailto:mustafa@virgate.co.uk">mustafa@virgate.co.uk</a> · <a href="https://virgate.co.uk">virgate.co.uk</a></span>
+    <span>Token estimates are <b>approximate only</b> — actual usage depends on schema complexity, data volume, and commentary length. Run the pilot for real measured figures.</span>
+  </div>
+</div>
+
+<script>
+var MODELS={sonnet:{name:'Sonnet 4.6',inp:3,out:15},haiku:{name:'Haiku 4.5',inp:0.80,out:4},opus:{name:'Opus 4.6',inp:15,out:75}};
+var model='sonnet';
+function setModel(m){model=m;['sonnet','haiku','opus'].forEach(function(k){document.getElementById('rc-'+k).className='rate-card'+(k===m?' active':'');});go();}
+function fmt(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return Math.round(n/1000)+'K';return String(Math.round(n));}
+function usd(n){if(n<0.005)return'<$0.01';if(n<10)return'$'+n.toFixed(2);if(n<1000)return'$'+Math.round(n).toLocaleString();return'$'+Math.round(n).toLocaleString();}
+function cost(inp,out){var m=MODELS[model];return(inp/1e6)*m.inp+(out/1e6)*m.out;}
+function pct(a,b){return b?Math.max(4,Math.round(a/b*100)):4;}
+
+function go(){
+  var cl=+document.getElementById('s-cl').value;
+  var en=+document.getElementById('s-en').value;
+  var gl=+document.getElementById('s-gl').value;
+  var vd=+document.getElementById('s-vd').value;
+  document.getElementById('v-cl').textContent=cl;
+  document.getElementById('v-en').textContent=en;
+  document.getElementById('v-gl').textContent=gl;
+  document.getElementById('v-vd').textContent=vd;
+
+  // ── Per client run ──────────────────────────────────────────────
+  // Phase 1: system prompt + schema response
+  var p1_sys_in =1800;
+  var p1_schema_in=800+(gl*en*120);
+  var p1_out=80;
+  var p1_in=p1_sys_in+p1_schema_in;
+  var p1_tot=p1_in+p1_out;
+  var p1_cost=cost(p1_in,p1_out);
+
+  // Phase 2: context + DAX queries + query results (per entity)
+  var p2_hist_in=p1_tot;
+  var p2_dax_out=en*300;
+  var p2_res_in=en*gl*80;
+  var p2_in=p2_hist_in+p2_res_in;
+  var p2_out=p2_dax_out;
+  var p2_tot=p2_in+p2_out;
+  var p2_cost=cost(p2_in,p2_out);
+
+  // Phase 3: vendor drill-downs (incremental per drilldown)
+  var p3_dax_out=vd*250;
+  var p3_res_in=vd*600;
+  var p3_ctx_in=vd*180;
+  var p3_in=p3_res_in+p3_ctx_in;
+  var p3_out=p3_dax_out;
+  var p3_tot=p3_in+p3_out;
+  var p3_cost=cost(p3_in,p3_out);
+
+  // Phase 4: full context carry-in + commentary output
+  var p4_ctx_in=p1_tot+p2_tot+p3_tot;
+  var p4_out_toks=en*gl*110;
+  var p4_in=p4_ctx_in;
+  var p4_out=p4_out_toks;
+  var p4_tot=p4_in+p4_out;
+  var p4_cost=cost(p4_in,p4_out);
+
+  var total_per=p1_tot+p2_tot+p3_tot+p4_tot;
+  var cost_per=p1_cost+p2_cost+p3_cost+p4_cost;
+  var cost_month=cost_per*cl;
+
+  // ── Phase bars ──────────────────────────────────────────────────
+  var maxP=Math.max(p1_tot,p2_tot,p3_tot,p4_tot)||1;
+  document.getElementById('pb1').style.width=pct(p1_tot,maxP)+'%';
+  document.getElementById('pb2').style.width=pct(p2_tot,maxP)+'%';
+  document.getElementById('pb3').style.width=pct(p3_tot,maxP)+'%';
+  document.getElementById('pb4').style.width=pct(p4_tot,maxP)+'%';
+
+  // Phase 1
+  document.getElementById('r-p1sys').textContent=fmt(p1_sys_in)+' tokens';
+  document.getElementById('r-p1schema').textContent=fmt(p1_schema_in)+' tokens';
+  document.getElementById('r-p1tot').textContent=fmt(p1_tot)+' tokens';
+  document.getElementById('pc1').textContent=usd(p1_cost);
+
+  // Phase 2
+  document.getElementById('r-p2hist').textContent=fmt(p2_hist_in)+' tokens';
+  document.getElementById('r-p2dax').textContent=fmt(p2_dax_out)+' tokens';
+  document.getElementById('r-p2res').textContent=fmt(p2_res_in)+' tokens';
+  document.getElementById('r-p2tot').textContent=fmt(p2_tot)+' tokens';
+  document.getElementById('pc2').textContent=usd(p2_cost);
+
+  // Phase 3
+  document.getElementById('r-p3dax').textContent=fmt(p3_dax_out)+' tokens';
+  document.getElementById('r-p3res').textContent=fmt(p3_res_in)+' tokens';
+  document.getElementById('r-p3ctx').textContent=fmt(p3_ctx_in)+' tokens';
+  document.getElementById('r-p3tot').textContent=fmt(p3_tot)+' tokens';
+  document.getElementById('pc3').textContent=usd(p3_cost);
+
+  // Phase 4
+  document.getElementById('r-p4ctx').textContent=fmt(p4_ctx_in)+' tokens';
+  document.getElementById('r-p4out').textContent=fmt(p4_out_toks)+' tokens';
+  document.getElementById('r-p4tot').textContent=fmt(p4_tot)+' tokens';
+  document.getElementById('pc4').textContent=usd(p4_cost);
+
+  // Summary cards
+  document.getElementById('m-total').textContent=usd(cost_month);
+  document.getElementById('m-annual').textContent=usd(cost_month*12);
+  document.getElementById('m-percl').textContent=usd(cost_per);
+  document.getElementById('m-toks').textContent=fmt(total_per);
+  document.getElementById('m-model-sub').textContent=MODELS[model].name;
+
+  // Tip
+  var biggest='Phase 4 (context carry-in)';
+  if(p2_tot>p4_tot&&p2_tot>p1_tot&&p2_tot>p3_tot)biggest='Phase 2 (DAX queries + results)';
+  var saving=usd(cost_month*0.5);
+  document.getElementById('tip-box').innerHTML='<b>Biggest cost driver:</b> '+biggest+' — your prompt carries the full conversation history into every tool call. Enabling <b>prompt caching</b> on the Anthropic API cuts repeated system prompt tokens by ~90%, saving approximately <b>'+saving+'/month</b> at this volume. Keep vendor drill-downs (Phase 3) selective — each one adds incremental context cost.';
+
+  // Impact
+  var box=document.getElementById('impact-box');
+  var msg,cls;
+  if(cost_month<5){cls='impact-low';msg='<b>Very low cost.</b> '+usd(cost_month)+'/month ('+usd(cost_per)+' per client) is negligible relative to time saved. Project 1 alone typically saves 2–3 hours of account manager time per client per period.';}
+  else if(cost_month<30){cls='impact-mid';msg='<b>Low cost.</b> '+usd(cost_month)+'/month is well within a standard automation budget. At '+usd(cost_per)+' per client, ROI against manual effort is very strong.';}
+  else{cls='impact-high';msg='<b>Review volume.</b> At '+usd(cost_month)+'/month, consider phasing the rollout — start with Project 1 only, measure actual token usage from the pilot, then scale.';}
+  box.className='impact-box '+cls;
+  box.innerHTML=msg;
+}
+go();
+</script>
+</body>
+</html>
